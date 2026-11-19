@@ -6,6 +6,7 @@ import { LaneDriver } from '../ai/laneDriver.js';
 import { LOOKS } from '../entities/humanoid.js';
 import { services } from '../core/services.js';
 import { dist2, rng, clamp } from '../util/mathx.js';
+import { WEAPONS } from '../config.js';
 
 const CARS_FOR_LEVEL = [0, 1, 2, 3, 4, 6];
 const CRIMES = {
@@ -104,6 +105,13 @@ export class PoliceSystem {
         if (d < 28 || (d < 90 && services.colliders.lineOfSight(v.pos.x, 1.6, v.pos.z, pp.x, pp.y + 1, pp.z))) seen = true;
         v.ai.target = { x: pp.x, z: pp.z };
         v.sirenOn = true;
+        // From three stars the passenger leans out and fires at the suspect.
+        u.fireCd = (u.fireCd ?? 1.5) - dt;
+        if (this.level >= 3 && u.fireCd <= 0 && d < 35 && services.colliders.lineOfSight(v.pos.x, 1.6, v.pos.z, pp.x, pp.y + 1, pp.z)) {
+          u.fireCd = rng.range(0.6, 1.4);
+          const shooter = { pos: { x: v.pos.x, y: v.pos.y + 0.2, z: v.pos.z }, yaw: Math.atan2(pp.x - v.pos.x, pp.z - v.pos.z), accuracy: 0.3, weapon: 'pistol' };
+          services.game.combat.npcShoot(shooter, player, WEAPONS.pistol, d);
+        }
         // Officers bail out when the suspect is on foot or stopped nearby.
         const stopped = !player.vehicle || player.vehicle.speed < 3;
         if (!u.deployed && stopped && d < 20 && v.speed < 6) this.deploy(u);

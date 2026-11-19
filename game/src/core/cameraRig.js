@@ -50,6 +50,13 @@ export class CameraRig {
       wantFov = 64 + clamp(speed * 0.4, 0, 20);
       height = 1.6 + v.def.body * 0.6;
       _target.set(v.pos.x, v.pos.y + height, v.pos.z);
+    } else if (player.dead) {
+      // Death: drift up and around the body.
+      this.mode = 'dead';
+      this.yaw += dt * 0.35;
+      this.pitch = damp(this.pitch, -0.75, 1.5, dt);
+      wantDist = 8; wantShoulder = 0; wantFov = 60;
+      _target.set(player.pos.x, player.pos.y + 0.6, player.pos.z);
     } else {
       this.mode = player.aiming ? 'aim' : 'foot';
       wantDist = player.aiming ? 2.3 : 4.4;

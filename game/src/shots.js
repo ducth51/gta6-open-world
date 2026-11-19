@@ -125,7 +125,7 @@ function chase(game) {
     drive();
     const rig = game.cameraRig;
     rig.freeLookT = 99;
-    rig.yaw = game.player.vehicle.yaw + Math.PI - 0.55;
+    rig.yaw = game.player.vehicle.yaw + Math.PI + 0.5;
     rig.pitch = -0.17;
     game.police.seen = true;
   });

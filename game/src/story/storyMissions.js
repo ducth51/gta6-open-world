@@ -95,7 +95,7 @@ export const STORY = [
     setup: (g, ctx) => {
       const spot = { x: g.plan.landmarks.safehouse.block.x1 + 10, z: g.plan.landmarks.safehouse.block.z1 + 40 };
       const lot = g.plan.blocks.find((b) => b.bi === 2 && b.bj === 3);
-      ctx.car = g.spawnVehicle('vortex', lot ? lot.x0 - 4 : spot.x, lot ? lot.cz : spot.z, Math.PI / 2, 0xff3b5c);
+      ctx.car = g.spawnVehicle('vortex', lot ? lot.x0 + 8 : spot.x, lot ? lot.cz : spot.z, Math.PI / 2, 0xff3b5c);
       ctx.car.mission = 'twotone';
       ctx.car.persistent = true;
     },
@@ -129,13 +129,13 @@ export const STORY = [
     intro: [['Holt', 'Vega. You have something of mine. Relax, I’m not here to arrest you.'], ['Holt', 'Kane’s cutting me loose. His courier van moves tonight’s cash out of the harbor. Wreck it.'], ['Holt', 'You keep half. I keep my pension. Everybody wins.']],
     setup: (g, ctx) => {
       const b = g.plan.landmarks.garage.block;
-      ctx.van = g.spawnTrafficVehicle('tidewater', b.cx, b.z1 + 8, 'flee', 0xd4af37);
+      ctx.van = g.spawnTrafficVehicle('tidewater', b.cx, b.z1 + 8, 'cruise', 0xd4af37);
       ctx.van.health = ctx.van.def.health = 220;
       ctx.van.mission = 'ledger';
       ctx.van.persistent = true;
     },
     steps: [
-      step.goTo((g) => ({ x: g.plan.landmarks.garage.block.cx, z: g.plan.landmarks.garage.block.z1 + 8 }), 'Find the gold courier van near the harbor.', 45, { vehicle: false }),
+      step.goTo((g) => g.missions.ctx.van?.pos ?? g.player.pos, 'Find the gold courier van near the harbor.', 40),
       { text: 'It’s running! Ram it or shoot it until it blows.', target: (g, ctx) => ctx.van?.pos, update: (g, ctx) => { if (ctx.van.ai) { ctx.van.ai.mode = 'flee'; ctx.van.ai.target = g.player.pos; ctx.van.ai.cruise = 22; } if (!ctx.van.dead) return null; ctx.vanWreck = { x: ctx.van.pos.x + 3, z: ctx.van.pos.z }; return 'done'; }, seconds: 150 },
       step.goTo((g, ctx) => g.missions.ctx.vanWreck ?? g.player.pos, 'Grab the cash bag from the wreck.', 4),
       step.loseCops(),

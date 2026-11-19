@@ -21,13 +21,13 @@ export class TrafficManager {
   spawnCar(x, z, minD, maxD, model = null, mode = 'cruise') {
     const game = services.game;
     const cam = services.camera;
-    for (let tries = 0; tries < 12; tries++) {
+    for (let tries = 0; tries < 30; tries++) {
       const i = rng.int(0, GRID), j = rng.int(0, GRID);
       const p = nodePos(i, j);
       const d = dist2(p.x, p.z, x, z);
       if (d < minD || d > maxD) continue;
       // Prefer junctions behind the camera so cars do not pop into view.
-      if (cam && d < 150) {
+      if (cam && d < 150 && mode !== 'pursuit') {
         const fx = Math.sin(game.cameraRig.yaw), fz = Math.cos(game.cameraRig.yaw);
         if ((p.x - cam.position.x) * fx + (p.z - cam.position.z) * fz > 0) continue;
       }
