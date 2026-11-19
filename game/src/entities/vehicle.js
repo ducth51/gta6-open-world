@@ -3,8 +3,10 @@
 import * as THREE from 'three';
 import { CAR_MODELS, buildCarMesh, wreckMaterial } from './carModels.js';
 import { services } from '../core/services.js';
+import { GRAVITY } from '../config.js';
 import { clamp, damp, rng } from '../util/mathx.js';
 import { groundHeight, clampToWorld } from '../world/cityPlan.js';
+import { rampHeightAt, RAMP_LEN, RAMP_RISE } from '../world/rampLayout.js';
 
 const _out = { x: 0, z: 0 };
 let nextId = 1;
@@ -36,6 +38,14 @@ export class Vehicle {
     this.locked = false;
     this.mission = null;
     this.wreckT = 0;
+    // Ramp jumps: while airborne the car follows gravity instead of the ground.
+    this.airborne = false;
+    this.vy = 0;
+    this.airT = 0;
+    this.groundVy = 0;
+    this.slope = 0;
+    this.takeoff = null;
+    this.jumpRamp = null;
     services.scene.add(this.mesh);
     this.syncMesh(0);
   }
@@ -73,9 +83,11 @@ export class Vehicle {
     let vF = this.vx * fx + this.vz * fz;
     let vR = this.vx * rx + this.vz * rz;
     this.braking = false;
+    const mine = this.driver === 'player';
+    const boost = mine ? services.perks?.engineBoost() ?? 1 : 1;       // Sol's engine tune
     if (c.throttle > 0) {
       if (vF < -0.5) { vF = Math.min(0, vF + 24 * c.throttle * dt); this.braking = true; }
-      else vF += d.accel * c.throttle * Math.max(0, 1 - (vF / d.maxSpeed) ** 2) * dt;
+      else vF += d.accel * boost * c.throttle * Math.max(0, 1 - (vF / (d.maxSpeed * boost)) ** 2) * dt;
     } else if (c.throttle < 0) {
       if (vF > 0.5) { vF = Math.max(0, vF + 24 * c.throttle * dt); this.braking = true; }
       else if (vF > -d.maxSpeed * 0.3) vF += d.accel * 0.6 * c.throttle * dt;
@@ -83,12 +95,15 @@ export class Vehicle {
       vF -= Math.sign(vF) * Math.min(Math.abs(vF), (1.6 + Math.abs(vF) * 0.03) * dt);
     }
     if (c.handbrake) { vF -= Math.sign(vF) * Math.min(Math.abs(vF), 7 * dt); this.braking = true; }
-    const grip = c.handbrake ? 1.4 : d.grip * (Math.abs(vR) > 7 ? 0.55 : 1);
+    // Wet roads give less grip; Sol's driving skill gives her more.
+    const surface = (services.weather?.grip ?? 1) * (mine ? (services.skills?.gripBonus() ?? 1) * (services.perks?.gripBoost() ?? 1) : 1);
+    const grip = (c.handbrake ? 1.4 : d.grip * (Math.abs(vR) > 7 ? 0.55 : 1)) * (this.airborne ? 0.15 : surface);
     vR *= Math.exp(-grip * dt);
 
     this.steerAngle = damp(this.steerAngle, c.steer, 7, dt);
     const sf = clamp(Math.abs(vF) / 5, 0, 1) * (1 - 0.5 * clamp(Math.abs(vF) / d.maxSpeed, 0, 1));
-    const yawRate = -this.steerAngle * d.steer * sf * Math.sign(vF || 1) * (c.handbrake ? 1.45 : 1);
+    const steerPower = d.steer * (this.driver === 'player' ? services.skills?.steerBonus() ?? 1 : 1) * (this.airborne ? 0.12 : 1);
+    const yawRate = -this.steerAngle * steerPower * sf * Math.sign(vF || 1) * (c.handbrake ? 1.45 : 1);
     this.yaw += yawRate * dt;
 
     // Normally the velocity follows the new heading; on the handbrake it keeps the old one and slides.
@@ -101,9 +116,51 @@ export class Vehicle {
     this.pos.x += this.vx * dt;
     this.pos.z += this.vz * dt;
     clampToWorld(this.pos);
-    this.pos.y = groundHeight(this.pos.x, this.pos.z);
+    this.followGround(dt);
     this.accelVis = (vF - (this._lastVF ?? vF)) / Math.max(dt, 1e-4);
     this._lastVF = vF;
+  }
+
+  /**
+   * Keeps the car on the ground, including the climb up a ramp. Leaving a ramp's end while still
+   * rising turns the climb into a launch; gravity then takes over until the car touches down.
+   */
+  followGround(dt) {
+    const ramp = rampHeightAt(this.pos.x, this.pos.z);
+    const gh = groundHeight(this.pos.x, this.pos.z) + ramp;
+    if (this.airborne) {
+      this.vy -= GRAVITY * 0.65 * dt;   // cars float a little: longer jumps read better on screen
+      this.pos.y += this.vy * dt;
+      this.airT += dt;
+      this.slope = Math.atan2(this.vy, Math.max(5, this.speed));
+      if (this.pos.y <= gh) this.land(gh);
+      return;
+    }
+    if (this.groundVy > 3 && this.pos.y - gh > 0.3) {
+      this.airborne = true;
+      this.vy = Math.min(this.groundVy, 13);
+      this.airT = 0;
+      this.takeoff = { x: this.pos.x, z: this.pos.z };
+      services.stunts?.onTakeoff(this);
+      return;
+    }
+    // On a ramp the car climbs at the ramp's gradient times its forward speed; elsewhere it is level.
+    const climb = ramp > 0 ? Math.max(0, this.forwardSpeed) * (RAMP_RISE / RAMP_LEN) : 0;
+    this.groundVy += (climb - this.groundVy) * Math.min(1, dt * 14);
+    this.pos.y = gh;
+    this.slope = ramp > 0 ? Math.atan2(RAMP_RISE, RAMP_LEN) * clamp(this.speed / 6, 0, 1) : 0;
+  }
+
+  land(gh) {
+    const fall = -this.vy;
+    const airT = this.airT;
+    this.pos.y = gh;
+    this.airborne = false;
+    this.vy = 0; this.groundVy = 0; this.slope = 0;
+    services.effects?.dust(this.pos.x, gh + 0.2, this.pos.z, 10);
+    if (fall > 7) this.impact(fall * 0.7, this.pos.x, this.pos.z);
+    if (this.driver === 'player') services.game?.cameraRig.shake(clamp(fall / 30, 0.05, 0.5));
+    services.stunts?.onLanded(this, airT);
   }
 
   collideStatic() {
@@ -139,6 +196,7 @@ export class Vehicle {
 
   damage(amount, source) {
     if (this.dead) return;
+    if (this.driver === 'player') amount *= services.perks?.damageTaken() ?? 1;   // armour plating
     this.health -= amount;
     if (source === 'player' || source?.isPlayer) this.lastAttacker = 'player';
     if (this.health <= 0 && this.burnT <= 0) {
@@ -200,7 +258,7 @@ export class Vehicle {
       this.pitch = damp(this.pitch, clamp(-(this.accelVis || 0) * 0.004, -0.05, 0.05), 6, dt);
     }
     this.parts.body.rotation.z = this.roll;
-    this.parts.body.rotation.x = this.pitch;
+    this.parts.body.rotation.x = this.pitch - this.slope;
     if (!this.dead) {
       const night = services.game?.sky.night ?? 0;
       this.parts.headMat.emissiveIntensity = 0.3 + night * 2.5;

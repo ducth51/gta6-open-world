@@ -14,6 +14,9 @@ export const BLIP_STYLE = {
   spray: { color: '#2de2c8', letter: 'P' }, save: { color: '#5dff8a', letter: 'H' }, job: { color: '#ff7a1a', letter: 'C' },
   hospital: { color: '#ff5a5a', letter: '+' }, police: { color: '#4fa8ff', letter: '★' }, race: { color: '#b06bff', letter: 'R' },
   cop: { color: '#4f7cff', letter: '' }, enemy: { color: '#ff3b3b', letter: '' }, checkpoint: { color: '#ff4fa0', letter: '' },
+  ramp: { color: '#ffffff', letter: 'J' }, property: { color: '#ffa63d', letter: '$' }, owned: { color: '#5dff8a', letter: '$' },
+  event: { color: '#ff8a1a', letter: '?' }, car: { color: '#2de2c8', letter: 'C' }, waypoint: { color: '#ff4fa0', letter: '▼' },
+  turf: { color: '#d93636', letter: 'T' }, turfOwned: { color: '#5dff8a', letter: 'T' }, mart: { color: '#ff3d8b', letter: 'M' },
 };
 
 export function renderCityImage(plan) {

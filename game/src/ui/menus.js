@@ -2,6 +2,7 @@
 // controls, settings, quit), the full-screen map, the controls card and the end credits.
 import { renderCityImage, drawBlip, BLIP_STYLE, MAP_X0, MAP_Z0, MAP_X1, MAP_Z1 } from './mapRenderer.js';
 import { CREDITS } from '../story/characters.js';
+import { missionTitle } from '../story/index.js';
 import { services } from '../core/services.js';
 
 const $ = (id) => document.getElementById(id);
@@ -10,7 +11,7 @@ export const CONTROLS = [
   ['W A S D', 'Move / drive'], ['Mouse', 'Look and aim the camera'], ['Shift', 'Sprint'], ['Space', 'Jump / handbrake'],
   ['F', 'Enter, steal or leave a car'], ['Left mouse', 'Shoot / punch'], ['Right mouse', 'Aim over the shoulder'],
   ['Q / E / wheel / 1-4', 'Switch weapon'], ['R', 'Reload (on foot) / change radio station (in a car)'], ['E', 'Interact: start missions, shop, save'],
-  ['H', 'Horn'], ['G', 'Siren (police cars)'], ['M', 'Map'], ['Esc', 'Pause'],
+  ['H', 'Horn'], ['G', 'Siren (police cars)'], ['T', 'Phone: cab, Benny, skills, business, weather'], ['M', 'Map'], ['Esc', 'Pause'],
 ];
 
 export class Menus {
@@ -23,6 +24,15 @@ export class Menus {
     this.mapCanvas = $('map-canvas');
     this.cityImage = renderCityImage(game.plan);
     this.open = null;
+    // A click on the big map sets the GPS waypoint; a right click clears it.
+    this.mapCanvas.addEventListener('click', (e) => {
+      const r = this.mapCanvas.getBoundingClientRect();
+      const x = MAP_X0 + ((e.clientX - r.left) / r.width) * (MAP_X1 - MAP_X0);
+      const z = MAP_Z0 + ((e.clientY - r.top) / r.height) * (MAP_Z1 - MAP_Z0);
+      game.setWaypoint({ x, z });
+      this.drawMap();
+    });
+    this.mapCanvas.addEventListener('contextmenu', (e) => { e.preventDefault(); game.setWaypoint(null); this.drawMap(); });
   }
 
   button(parent, label, fn, disabled = false) {
@@ -64,7 +74,9 @@ export class Menus {
     this.button(menu, `Mouse: ${g.settings.sensitivity.toFixed(2)}×`, () => { g.settings.sensitivity = g.settings.sensitivity >= 2 ? 0.5 : g.settings.sensitivity + 0.25; g.applySettings(); this.showPause(); });
     this.button(menu, 'Quit to title', () => g.quitToTitle());
     const p = g.player;
-    $('pause-stats').innerHTML = `Story: ${g.missions.index}/5 missions · Sun Tokens: ${g.activities.tokensFound.size}/15<br>Cars stolen: ${p.stats.carsStolen} · Distance: ${(p.stats.distance / 1000).toFixed(1)} km · Shots: ${p.stats.shots}`;
+    $('pause-stats').innerHTML = `Next mission: ${missionTitle(g.missions.index)}<br>Story: ${g.missions.index}/${g.missions.total} missions · Sun Tokens: ${g.activities.tokensFound.size}/15 · Stunt jumps: ${g.stunts.done.size}/8<br>`
+      + `Businesses: ${g.properties.ownedCount}/3 · Street events: ${g.events.completed} · ${g.weather.label}<br>`
+      + `Cars stolen: ${p.stats.carsStolen} · Distance: ${(p.stats.distance / 1000).toFixed(1)} km · Shots: ${p.stats.shots}`;
   }
 
   hidePause() { this.pause.classList.add('hidden'); this.map.classList.add('hidden'); this.info.classList.add('hidden'); this.open = null; }
@@ -80,7 +92,7 @@ export class Menus {
     $('info-body').innerHTML = `<h2>PALMERA BAY</h2>
       <p>A sun-bleached coastal city of glass towers, pastel beach hotels and neon. Sol Vega is home after three years inside — and her family owes the Gilded Hand.</p>
       <p><b>Glasswater</b> — downtown towers and Kane Tower. <b>Palmera Beach</b> — hotels, the Sunwheel pier and Rosa's Diner. <b>Old Harbor</b> — cranes, containers, Benny's Garage. <b>Coral Heights</b> — bungalows and pools. <b>Saltmarsh</b> — yards, trailers and the Gilded Hand's cash.</p>
-      <p>Five story missions, two street races, courier runs, fifteen Sun Tokens, a gun counter, a respray shop and a five-star police force.</p><p>Click to close.</p>`;
+      <p>Nine story missions in two chapters, street races, courier and cab jobs, eight stunt jumps, store hold-ups, turf wars, three businesses, fifteen Sun Tokens, a garage and a five-star police force with roadblocks and a helicopter. Rain, thunderstorms and traffic lights keep the streets honest. Press <b>T</b> for the phone.</p><p>Click to close.</p>`;
     this.info.onclick = () => this.info.classList.add('hidden');
   }
 
@@ -94,8 +106,8 @@ export class Menus {
     this.open = 'map';
     this.map.classList.remove('hidden');
     this.drawMap();
-    $('map-legend').innerHTML = [['mission', 'Story mission'], ['target', 'Objective'], ['race', 'Street race'], ['job', 'Bay Couriers'], ['guns', 'Bayside Arms'], ['spray', 'Fresh Coat respray'], ['save', 'Safehouse / save'], ['hospital', 'Hospital'], ['police', 'PBPD'], ['cop', 'Police']]
-      .map(([k, label]) => `<div><span class="dot" style="background:${BLIP_STYLE[k].color}"></span>${label}</div>`).join('') + '<p>Press M or Esc to close</p>';
+    $('map-legend').innerHTML = [['mission', 'Story mission'], ['target', 'Objective'], ['race', 'Street race'], ['job', 'Bay Couriers'], ['guns', 'Bayside Arms'], ['spray', 'Fresh Coat respray'], ['save', 'Safehouse / save'], ['hospital', 'Hospital'], ['police', 'PBPD'], ['cop', 'Police'], ['ramp', 'Stunt ramp'], ['property', 'Business for sale'], ['owned', 'Your business'], ['event', 'Street event'], ['waypoint', 'Your waypoint']]
+      .map(([k, label]) => `<div><span class="dot" style="background:${BLIP_STYLE[k].color}"></span>${label}</div>`).join('') + '<p>Click the map to set a waypoint, right-click to clear it.<br>Press M or Esc to close.</p>';
   }
 
   drawMap() {
@@ -106,9 +118,9 @@ export class Menus {
     const P = (x, z) => ({ x: (x - MAP_X0) * sx, y: (z - MAP_Z0) * sz });
     ctx.font = 'bold 16px sans-serif'; ctx.textAlign = 'center'; ctx.fillStyle = 'rgba(20,20,30,0.75)';
     for (const [name, x, z] of [['GLASSWATER', 420, 330], ['PALMERA BEACH', 760, 180], ['OLD HARBOR', 380, 760], ['CORAL HEIGHTS', 130, 160], ['SALTMARSH', 130, 560], ['THE BAY', 960, 600]]) { const q = P(x, z); ctx.fillText(name, q.x, q.y); }
-    for (const b of g.activities.blips()) { const q = P(b.x, b.z); drawBlip(ctx, q.x, q.y, BLIP_STYLE[b.icon], 9); }
+    for (const b of g.allBlips()) { const q = P(b.x, b.z); drawBlip(ctx, q.x, q.y, BLIP_STYLE[b.icon], 9); }
     if (!g.missions.active && g.missions.next) { const m = g.missions.giverPos(g.missions.next); const q = P(m.x, m.z); drawBlip(ctx, q.x, q.y, BLIP_STYLE.mission, 11); }
-    const t = g.missions.currentTarget() ?? g.activities.currentTarget();
+    const t = g.gpsTarget();
     if (t) { const q = P(t.x, t.z); drawBlip(ctx, q.x, q.y, BLIP_STYLE.target, 10); }
     const p = g.player, pp = p.vehicle ? p.vehicle.pos : p.pos;
     const q = P(pp.x, pp.z);

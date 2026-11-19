@@ -16,6 +16,10 @@ const geo = {
   longGun: new THREE.BoxGeometry(0.08, 0.72, 0.13).translate(0, -0.88, 0.05),
   badge: new THREE.BoxGeometry(0.08, 0.08, 0.02).translate(0.12, 0.48, 0.15),
 };
+const umbrellaGeo = {
+  pole: new THREE.CylinderGeometry(0.02, 0.02, 1.0, 5).translate(0, 0.5, 0),
+  canopy: new THREE.ConeGeometry(0.62, 0.3, 10),
+};
 const shadowGeo = new THREE.CircleGeometry(0.45, 12).rotateX(-Math.PI / 2);
 const shadowMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.28, depthWrite: false });
 
@@ -81,6 +85,17 @@ export class Humanoid {
     this.blob = new THREE.Mesh(shadowGeo, shadowMat);
     this.blob.position.y = 0.03;
     this.root.add(this.blob);
+    // A rain umbrella held over the head: pole, canopy and a ring of trim, hidden until it rains.
+    this.umbrella = new THREE.Group();
+    const canopyColor = l.shirt;
+    const pole = new THREE.Mesh(umbrellaGeo.pole, mat(0x2a2a2e));
+    const canopy = new THREE.Mesh(umbrellaGeo.canopy, mat(canopyColor));
+    canopy.position.y = 0.9;
+    canopy.castShadow = true;
+    this.umbrella.add(pole, canopy);
+    this.umbrella.position.set(-0.12, 1.1, 0.12);
+    this.umbrella.visible = false;
+    this.torso.add(this.umbrella);
     this.phase = 0;
     this.punchT = 0;
     this.fall = 0;
@@ -92,6 +107,9 @@ export class Humanoid {
   }
 
   punch() { this.punchT = 0.3; }
+
+  /** Opens or folds the umbrella (a pedestrian's answer to the rain). */
+  setUmbrella(open) { this.umbrella.visible = open; }
 
   /**
    * Poses the body. speed in m/s, aim: pitch in radians or null, dead: bool, dt seconds.

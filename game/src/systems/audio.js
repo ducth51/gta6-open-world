@@ -29,6 +29,7 @@ export class AudioSystem {
     this.startEngine();
     this.startSiren();
     this.startAmbience();
+    this.startWeatherLayers();
   }
 
   get ready() { return !!this.ctx && this.ctx.state === 'running'; }
@@ -205,5 +206,66 @@ export class AudioSystem {
     const swell = 0.5 + 0.5 * Math.sin(time * 0.7);
     this.ambience.waves.gain.setTargetAtTime(beach * (0.04 + swell * 0.07), t, 0.3);
     this.ambience.city.gain.setTargetAtTime(0.012 + (1 - beach) * 0.025, t, 0.3);
+  }
+
+  /** Two always-running layers, silent until asked for: hissing rain and a chopping helicopter rotor. */
+  startWeatherLayers() {
+    const ctx = this.ctx;
+    const rain = this.noiseSource(2); rain.loop = true;
+    const hp = ctx.createBiquadFilter(); hp.type = 'highpass'; hp.frequency.value = 1400;
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 7500;
+    const rainGain = ctx.createGain(); rainGain.gain.value = 0;
+    rain.connect(hp).connect(lp).connect(rainGain).connect(this.sfx); rain.start();
+
+    const air = this.noiseSource(2); air.loop = true;
+    const low = ctx.createBiquadFilter(); low.type = 'lowpass'; low.frequency.value = 240;
+    const chop = ctx.createGain(); chop.gain.value = 0.5;
+    const lfo = ctx.createOscillator(); lfo.frequency.value = 13;
+    const depth = ctx.createGain(); depth.gain.value = 0.5;
+    lfo.connect(depth).connect(chop.gain);
+    const out = ctx.createGain(); out.gain.value = 0;
+    const pan = ctx.createStereoPanner();
+    air.connect(low).connect(chop).connect(out).connect(pan).connect(this.sfx);
+    air.start(); lfo.start();
+    this.layers = { rain: rainGain, rotor: out, rotorPan: pan };
+  }
+
+  /** A seagull's cry: two quick falling whistles, quieter with distance. */
+  gull(pos) {
+    const out = this.spatial(pos, 0.5, 130); if (!out) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    [0, 0.22].forEach((delay, i) => {
+      const o = ctx.createOscillator(); o.type = 'triangle';
+      o.frequency.setValueAtTime(1500 - i * 150, t + delay); o.frequency.exponentialRampToValueAtTime(820, t + delay + 0.2);
+      const g = ctx.createGain(); this.env(g.gain, t + delay, 0.02, 0.35, 0.2);
+      o.connect(g).connect(out); o.start(t + delay); o.stop(t + delay + 0.26);
+    });
+  }
+
+  /** Rain loudness 0..1. */
+  setRain(level) {
+    if (!this.ready || !this.layers) return;
+    this.layers.rain.gain.setTargetAtTime(level * 0.1, this.ctx.currentTime, 0.6);
+  }
+
+  /** Helicopter rotor loudness 0..1 and its pan; 0 silences it. */
+  setRotor(level, pan = 0) {
+    if (!this.ready || !this.layers) return;
+    const t = this.ctx.currentTime;
+    this.layers.rotor.gain.setTargetAtTime(level * 0.55, t, 0.15);
+    this.layers.rotorPan.pan.setTargetAtTime(pan * 0.8, t, 0.15);
+  }
+
+  /** A long low roll of thunder. */
+  thunder(strength = 1) {
+    if (!this.ready) return;
+    const ctx = this.ctx, t = ctx.currentTime;
+    const n = this.noiseSource(2);
+    const lp = ctx.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.setValueAtTime(420, t); lp.frequency.exponentialRampToValueAtTime(60, t + 2.4);
+    const g = ctx.createGain(); this.env(g.gain, t, 0.25, 1.1 * strength, 2.3);
+    n.connect(lp).connect(g).connect(this.sfx); n.start(t, Math.random()); n.stop(t + 2.7);
+    const o = ctx.createOscillator(); o.frequency.setValueAtTime(52, t); o.frequency.exponentialRampToValueAtTime(28, t + 1.8);
+    const og = ctx.createGain(); this.env(og.gain, t, 0.3, 0.7 * strength, 1.8);
+    o.connect(og).connect(this.sfx); o.start(t); o.stop(t + 2.2);
   }
 }

@@ -55,6 +55,9 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0a14; fon
 #hud-hitmarker { position: absolute; left: 50%; top: 50%; width: 30px; height: 30px; margin: -15px 0 0 -15px; opacity: 0; transition: opacity .15s; border: 2px solid #ff4d4d; transform: rotate(45deg); border-radius: 3px; }
 #hud-hitmarker.show { opacity: 1; transition: none; }
 
+#hud-sky { font-size: 13px; letter-spacing: 3px; text-transform: uppercase; color: #bfe3ff; min-height: 14px; }
+#hud-air { margin-top: 4px; font-size: 13px; letter-spacing: 2px; color: #7ec8ff; animation: blink .9s steps(2) infinite; }
+#hud-stunt { position: absolute; left: 50%; top: 22%; transform: translateX(-50%); font-family: var(--display); font-size: 40px; letter-spacing: 3px; color: var(--teal); text-shadow: 0 0 18px rgba(45,226,200,.6), 0 3px 0 #000; }
 #hud-subtitle { position: absolute; left: 50%; bottom: 120px; transform: translateX(-50%); max-width: 760px; text-align: center; font-size: 21px; background: rgba(0,0,0,.45); padding: 8px 16px; border-radius: 4px; }
 #hud-subtitle b { color: var(--gold); }
 #hud-timer { position: absolute; top: 18px; left: 50%; transform: translateX(-50%); font-family: var(--display); font-size: 34px; color: #fff; }
@@ -89,5 +92,34 @@ html, body { margin: 0; height: 100%; overflow: hidden; background: #0d0a14; fon
 #map-canvas { height: 90vh; width: 90vh; border-radius: 8px; box-shadow: 0 0 40px rgba(0,0,0,.6); }
 #map-legend { font-size: 15px; line-height: 1.9; }
 #map-legend span.dot { display: inline-block; width: 12px; height: 12px; border-radius: 50%; margin-right: 8px; vertical-align: middle; }
+/* ---------- Phone ---------- */
+#phone-screen { background: rgba(5,3,12,.55); }
+.phone-body { width: 340px; min-height: 520px; max-height: 86vh; background: linear-gradient(180deg, #1c1030, #0f0a1c); border: 3px solid #3a2a5c; border-radius: 34px; padding: 26px 20px 18px; display: flex; flex-direction: column; box-shadow: 0 20px 60px rgba(0,0,0,.7), inset 0 0 0 2px rgba(255,255,255,.06); pointer-events: auto; }
+.phone-head { display: flex; justify-content: space-between; font-size: 14px; letter-spacing: 2px; opacity: .85; margin-bottom: 10px; }
+#phone-view { flex: 1; overflow: auto; font-size: 15px; line-height: 1.45; }
+#phone-view h3 { font-family: var(--display); letter-spacing: 3px; color: var(--gold); margin: 4px 0 8px; font-size: 24px; font-weight: normal; }
+.phone-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.phone-body button { font-family: var(--font); color: #fff; background: rgba(255,255,255,.07); border: 1px solid rgba(255,255,255,.14); border-radius: 12px; padding: 10px; cursor: pointer; text-align: left; }
+.phone-body button:hover:not(:disabled) { background: linear-gradient(90deg, var(--magenta), var(--coral)); }
+.phone-body button:disabled { opacity: .4; cursor: default; }
+.phone-body .app small, .phone-body .row small, .skill small { display: block; font-size: 12px; opacity: .7; margin-top: 2px; }
+.phone-list { display: flex; flex-direction: column; gap: 6px; }
+.phone-body .row { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.phone-body .row.static { background: rgba(255,255,255,.05); border-radius: 12px; padding: 10px; border: 1px solid rgba(255,255,255,.1); }
+.phone-body .big { width: 100%; text-align: center; font-weight: bold; margin-top: 8px; padding: 12px; }
+.phone-foot { display: flex; gap: 8px; margin-top: 12px; }
+.phone-foot button { flex: 1; text-align: center; }
+.phone-body .row.static.done { border-color: var(--teal); background: rgba(45,226,200,.1); }
+.skill { margin-bottom: 10px; }
+.skill span { opacity: .7; margin-left: 6px; }
+.meter { height: 8px; background: rgba(255,255,255,.12); border-radius: 4px; overflow: hidden; margin-top: 3px; }
+.meter i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), var(--gold)); }
+.note { font-size: 13px; opacity: .75; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chips span { padding: 4px 10px; border-radius: 999px; background: rgba(255,255,255,.08); font-size: 13px; }
+.chips span.on { background: var(--teal); color: #08121a; font-weight: bold; }
+#phone-view table { width: 100%; border-collapse: collapse; }
+#phone-view td { padding: 4px 2px; border-bottom: 1px solid rgba(255,255,255,.08); }
+#phone-view td:last-child { text-align: right; }
 #fade { position: fixed; inset: 0; background: #000; opacity: 0; pointer-events: none; transition: opacity .6s; }
 #fade.on { opacity: 1; }

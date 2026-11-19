@@ -34,6 +34,19 @@ export class SaveGame {
       bestTimes: game.activities.bestTimes,
       hour: game.hour,
       stats: p.stats,
+      skills: game.skills.serialize(),
+      perks: game.perks.serialize(),
+      achievements: game.achievements.serialize(),
+      turf: game.territories.serialize(),
+      vigilante: game.vigilante.serialize(),
+      taxi: game.taxi.serialize(),
+      holdups: game.holdups.serialize(),
+      outfit: game.wardrobe.serialize(),
+      helisDowned: game.stats.helisDowned ?? 0,
+      stunts: game.stunts.serialize(),
+      properties: game.properties.serialize(),
+      events: { completed: game.events.completed, earned: game.events.earned },
+      car: game.lastCarModel,
     };
     try { localStorage.setItem(KEY + slot, JSON.stringify(data)); return true; } catch { return false; }
   }
@@ -51,5 +64,19 @@ export class SaveGame {
     game.activities.bestTimes = data.bestTimes ?? {};
     game.hour = data.hour ?? game.hour;
     if (data.stats) Object.assign(p.stats, data.stats);
+    game.skills.restore(data.skills);
+    game.perks.restore(data.perks);
+    game.achievements.restore(data.achievements);
+    game.territories.restore(data.turf);
+    game.vigilante.restore(data.vigilante);
+    game.taxi.restore(data.taxi);
+    game.holdups.restore(data.holdups);
+    game.wardrobe.restore(data.outfit, p);
+    game.stats.helisDowned = data.helisDowned ?? 0;
+    game.stunts.restore(data.stunts);
+    game.properties.restore(data.properties);
+    game.events.completed = data.events?.completed ?? 0;
+    game.events.earned = data.events?.earned ?? 0;
+    game.lastCarModel = data.car ?? null;
   }
 }

@@ -19,6 +19,10 @@ export const LANE_OFFSET = 4;
 export const PHYSICS_STEP = 1 / 60;
 export const GRAVITY = 22;
 
+/** Police air support and roadblocks start at this many stars (entities/helicopter.js, systems/roadblocks.js). */
+export const AIR_SUPPORT_LEVEL = 3;
+export const GUNNER_LEVEL = 4;
+
 /** One in-game minute per real second: a full day takes 24 minutes. */
 export const MINUTES_PER_SECOND = 1;
 export const START_HOUR = 17.4;
@@ -49,3 +53,9 @@ export const WEAPON_ORDER = ['fists', 'pistol', 'smg', 'shotgun'];
 /** Respawn and penalty rules. */
 export const HOSPITAL_FEE = 250;
 export const BUSTED_FEE = 400;
+
+/** Phone services (ui/phone.js): the cab's fare, Benny's delivery fee and how often Rosa can feed Sol. */
+export const TAXI_BASE_FARE = 40;
+export const TAXI_METRES_PER_DOLLAR = 10;
+export const DELIVERY_FEE = 350;
+export const MEAL_COOLDOWN = 180;

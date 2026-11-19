@@ -67,14 +67,22 @@ function resolve(g, where) {
   return g.plan.landmarks[where].door;
 }
 
-/** Spawns a group of Gilded Hand gunmen around a point and returns them. */
-function guards(g, cx, cz, offsets, opts = {}) {
+/**
+ * Spawns a group of gunmen around a point and returns them. With `boss`, the first of them is the
+ * crew's leader: tougher, armoured, carrying a shotgun, dressed as `bossLook` (Kane by default) and
+ * saying `bossLine` when he falls.
+ */
+export function guards(g, cx, cz, offsets, opts = {}) {
   return offsets.map(([dx, dz], i) => {
-    const p = g.peds.spawn(opts.boss && i === 0 ? LOOKS.kane : LOOKS.gang, cx + dx, cz + dz, 'gang');
+    const boss = opts.boss && i === 0;
+    const p = g.peds.spawn(boss ? LOOKS[opts.bossLook ?? 'kane'] : LOOKS.gang, cx + dx, cz + dz, 'gang');
     p.guardPoint = { x: cx + dx, z: cz + dz };
     p.persistent = true;
     p.mission = true;
-    if (opts.boss && i === 0) { p.health = p.maxHealth = 260; p.armor = 100; p.weapon = 'shotgun'; p.accuracy = 0.5; p.isBoss = true; }
+    if (boss) {
+      p.health = p.maxHealth = 260; p.armor = 100; p.weapon = 'shotgun'; p.accuracy = 0.5; p.isBoss = true;
+      p.bossLine = opts.bossLine ?? ['Kane', 'You... were supposed to be... a nobody.'];
+    }
     return p;
   });
 }
@@ -157,8 +165,8 @@ export const STORY = [
       { text: 'Tomás is free!', update: (g) => { g.police.setLevel(3); return 'done'; } },
       step.goTo('safehouse', 'Escape to Sol’s Bungalow in Coral Heights.', 6),
     ],
-    outro: [['Tomás', 'Sol... I’m sorry. I’m so sorry.'], ['Sol', 'Save it. Rosa’s making breakfast. Everyone eats.']],
-    credits: true,
+    outro: [['Tomás', 'Sol... I’m sorry. I’m so sorry.'], ['Sol', 'Save it. Rosa’s making breakfast. Everyone eats.'], ['Benny', 'Chief? Somebody called Calloway is asking about you. Come by the garage.']],
+    chapterEnd: 1,
   },
 ];
 

@@ -2,15 +2,16 @@
 // systems (a story mission at a given step, the police at a given level, a race, a firefight) and
 // lets the simulation run for a few seconds with a simple autopilot on the controls, so the frame is
 // what playing looks like. `window.__shotReady` turns true when the frame is ready to capture.
-import { STORY_BY_ID } from './story/storyMissions.js';
+import { MISSION_BY_ID } from './story/index.js';
 import { RACES } from './systems/activities.js';
 import { LaneDriver } from './ai/laneDriver.js';
 import { nodePos } from './ai/roadGraph.js';
+import { RAMPS } from './world/rampLayout.js';
 import { blockBounds } from './world/cityPlan.js';
 import { reseedGameplay, clamp, wrapAngle } from './util/mathx.js';
 import { services } from './core/services.js';
 
-const SCENES = { title, chase, shootout, beach, map };
+const SCENES = { title, chase, shootout, stunt, storm, beach, map, phone };
 
 export function runShotScene(game, name) {
   reseedGameplay(4242);
@@ -37,6 +38,7 @@ function quietStart(game) {
   game.hud.instantMoney = true;
   game.input.enabled = true;
   game.input.virtual = { held: new Set(), tapped: new Set(), fire: false, aim: false };
+  game.achievements.pollT = Infinity;   // no trophy banners over a screenshot
 }
 
 function putInCar(game, model, x, z, yaw, color, speed = 0) {
@@ -65,9 +67,9 @@ function laneAutopilot(game, axis, laneCoord, yaw, maxSpeed) {
 }
 
 function startMissionAt(game, id, stepIndex) {
-  const def = STORY_BY_ID[id];
+  const def = MISSION_BY_ID[id];
   const m = game.missions;
-  m.index = Math.max(m.index, Object.keys(STORY_BY_ID).indexOf(id));
+  m.index = Math.max(m.index, Object.keys(MISSION_BY_ID).indexOf(id));
   m.start(def);
   m.stepIndex = stepIndex;
   m.timeLeft = def.steps[stepIndex].seconds ?? null;
@@ -109,7 +111,7 @@ function chase(game) {
   game.player.giveWeapon('pistol', 60);
   startMissionAt(game, 'ledger', 1);
   const van = game.missions.ctx.van;
-  van.pos.set(560, 0, z); van.yaw = yaw; van.vx = -24; van.vz = 0;
+  van.pos.set(470, 0, z); van.yaw = yaw; van.vx = -31; van.vz = 0;   // well ahead, out of the camera's way
   van.ai.mode = 'flee'; van.ai.rejoin();
   van.health = 120;
   game.police.setLevel(3);
@@ -117,8 +119,12 @@ function chase(game) {
   addPursuer(game, 'police', 622, z + 1, yaw, 30);
   addPursuer(game, 'police', 640, z + 7, yaw, 29);
   addPursuer(game, 'police', 668, z, yaw, 28);
-  addTraffic(game, 'cab', 520, z + 8, Math.PI / 2, 10);
-  addTraffic(game, 'marlin', 470, z + 8, Math.PI / 2, 10);
+  // The helicopter has joined: it hangs behind the chase, lit up by its own searchlight.
+  game.air.spawn();
+  const heli = game.air.heli;
+  heli.altitude = 24; heli.orbit = -0.6; heli.pos.set(655, 24, z + 4); heli.yaw = yaw;
+  addTraffic(game, 'cab', 430, z + 8, Math.PI / 2, 10);
+  addTraffic(game, 'marlin', 390, z + 8, Math.PI / 2, 10);
   addTraffic(game, 'tidewater', 700, z + 8, Math.PI / 2, 10);
   const drive = laneAutopilot(game, 'z', z, yaw, 33);
   settle(game, 2.6, (dt) => {
@@ -196,6 +202,65 @@ function beach(game) {
     rig.yaw = game.player.vehicle.yaw + 0.5;
     rig.pitch = -0.13;
   });
+}
+
+/** A stunt jump: the Pelican Hop ramp on the beach, a Vortex GT in mid-air at sunset. */
+function stunt(game) {
+  quietStart(game);
+  game.hour = 17.95;
+  const r = RAMPS.find((x) => x.id === 'pelican');
+  // Start 17 m before the ramp, on the line it points along, already up to speed.
+  putInCar(game, 'vortex', r.x - Math.sin(r.yaw) * 17, r.z - Math.cos(r.yaw) * 17, r.yaw, 0xff3b5c, 27);
+  game.player.money = 12750;
+  game.police.clear();
+  game.stunts.done.add('dune-north');
+  const keys = game.input.virtual.held;
+  settle(game, 1.7, (dt, t) => {
+    const v = game.player.vehicle;
+    keys.clear();
+    if (t < 0.6) keys.add('KeyW');
+    const rig = game.cameraRig;
+    rig.freeLookT = 99;
+    rig.yaw = v.yaw + Math.PI * 0.5 + 0.6;
+    rig.pitch = -0.04;
+  });
+}
+
+/** A thunderstorm over Glasswater at dusk: wet roads, rain, signals and a car waiting at a red. */
+function storm(game) {
+  quietStart(game);
+  game.hour = 19.7;
+  game.weather.force('storm');
+  const z = 4 * 80 + 8 + 4;               // eastbound lane of Grand Ave
+  const yaw = Math.PI / 2;
+  putInCar(game, 'marlin', 330, z, yaw, 0x2f5d8a, 14);
+  game.player.money = 3480;
+  game.player.giveWeapon('pistol', 48);
+  startMissionAt(game, 'convoy', 1);
+  addTraffic(game, 'cab', 420, z, yaw, 6);
+  addTraffic(game, 'tidewater', 470, z - 8, -yaw, 9);
+  addTraffic(game, 'coupe', 250, z - 8, -yaw, 9, 0x8fe3d0);
+  const drive = laneAutopilot(game, 'z', z, yaw, 16);
+  settle(game, 2.6, (dt, t) => {
+    drive();
+    game.weather.flash = t > 1.8 ? 0.55 : game.weather.flash;
+    const rig = game.cameraRig;
+    rig.freeLookT = 99;
+    rig.yaw = game.player.vehicle.yaw + Math.PI + 0.35;
+    rig.pitch = -0.1;
+  });
+}
+
+/** The phone open on the skills page. */
+function phone(game) {
+  quietStart(game);
+  game.player.money = 8420;
+  game.skills.xp.driving = 340; game.skills.xp.shooting = 160; game.skills.xp.stamina = 90; game.skills.xp.strength = 40;
+  game.state = 'phone';
+  game.phone.show();
+  game.phone.view = 'skills';
+  game.phone.render();
+  settle(game, 0.4);
 }
 
 /** The title screen over the bay with a save waiting to continue. */

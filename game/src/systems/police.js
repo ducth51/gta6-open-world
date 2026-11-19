@@ -18,6 +18,7 @@ const CRIMES = {
   copAssault: { min: 2, add: 0.5 },
   copKilled: { min: 3, add: 1 },
   explosion: { min: 2, add: 0.5 },
+  heliDown: { min: 4, add: 1 },
   mission: { min: 2, add: 0 },
 };
 
@@ -123,6 +124,8 @@ export class PoliceSystem {
         if (d < 25 || (d < 70 && services.colliders.lineOfSight(o.pos.x, o.pos.y + 1.6, o.pos.z, pp.x, pp.y + 1.2, pp.z))) seen = true;
       }
     }
+    // The helicopter overhead keeps the stars burning while it has eyes on the suspect.
+    if (services.air?.canSee(pp)) seen = true;
     this.seen = seen;
     if (seen) { this.unseenT = 0; this.lastSeen = { x: pp.x, z: pp.z }; }
     else {

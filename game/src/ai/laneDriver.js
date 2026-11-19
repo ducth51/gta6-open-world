@@ -104,6 +104,15 @@ export class LaneDriver {
     c.steer = clamp(-ang * 2.2, -1, 1);
     if (Math.abs(ang) > 1.2 && v.speed > 6) desired = Math.min(desired, 8);
 
+    // Wait at red lights; pursuits and getaways run them.
+    if (!this.direct && (this.mode === 'cruise' || this.mode === 'route')) {
+      const stop = services.lights ? services.lights.stopDistance(v.pos.x, v.pos.z, v.yaw, v.speed) : Infinity;
+      if (stop < Infinity) {
+        desired = Math.min(desired, Math.max(0, (stop - 0.4) * 0.9));
+        this.atLight = true;
+      } else this.atLight = false;
+    }
+
     // Brake for anything in the way (except when ramming in a chase).
     const ahead = this.mode === 'pursuit' ? 0 : this.obstacleAhead();
     if (ahead) {
@@ -113,8 +122,9 @@ export class LaneDriver {
       if (this.blockedT > 9) { this.blockedT = 0; this.reverseT = 1.5; }
     } else this.blockedT = 0;
 
-    // Unstick: reverse briefly if wedged against something while trying to move.
-    if (desired > 3 && v.speed < 0.6) this.stuckT += dt; else this.stuckT = 0;
+    // Unstick: reverse briefly if wedged against something while trying to move (a red light is no wedge).
+    if (desired > 3 && v.speed < 0.6 && !this.atLight) this.stuckT += dt; else this.stuckT = 0;
+    if (this.atLight && ahead) this.blockedT = 0;
     if (this.stuckT > 2) { this.reverseT = 1.2; this.stuckT = 0; }
     if (this.reverseT > 0) {
       this.reverseT -= dt;

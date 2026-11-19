@@ -20,7 +20,7 @@ export class Combat {
   /** Casts one bullet; returns { dist, actor, vehicle } of the first thing hit. */
   castBullet(ox, oy, oz, dx, dy, dz, range, skip, skipVehicle = null) {
     let best = services.colliders.raycast(ox, oy, oz, dx, dy, dz, range);
-    let actor = null, vehicle = null;
+    let actor = null, vehicle = null, heli = null;
     for (const a of this.targets(skip)) {
       if (Math.abs(a.pos.x - ox) > range + 2 || Math.abs(a.pos.z - oz) > range + 2) continue;
       const t = rayCylinder(ox, oy, oz, dx, dy, dz, a.pos.x, a.pos.z, 0.42, a.pos.y, a.pos.y + 1.85);
@@ -33,7 +33,13 @@ export class Combat {
         if (t >= 0 && t < best) { best = t; vehicle = v; actor = null; }
       }
     }
-    return { dist: best, actor, vehicle };
+    // The police helicopter is a tall cylinder high above the street.
+    const shape = services.air?.hitShape();
+    if (shape) {
+      const t = rayCylinder(ox, oy, oz, dx, dy, dz, shape.x, shape.z, shape.r, shape.y0, shape.y1);
+      if (t >= 0 && t < best) { best = t; heli = shape.heli; actor = null; vehicle = null; }
+    }
+    return { dist: best, actor, vehicle, heli };
   }
 
   /** The player fires the current gun from the crosshair. */
@@ -52,7 +58,7 @@ export class Combat {
     rig.shake(def.pellets ? 0.25 : 0.07);
     let hitSomething = false;
     for (let i = 0; i < pellets; i++) {
-      const spread = (def.spread ?? 0) * (player.aiming ? 0.6 : 1.4) * (player.moveSpeed > 3 ? 1.6 : 1);
+      const spread = (def.spread ?? 0) * (player.aiming ? 0.6 : 1.4) * (player.moveSpeed > 3 ? 1.6 : 1) * (services.skills?.spreadMul() ?? 1);
       const dx = fwd.x + rng.range(-spread, spread), dy = fwd.y + rng.range(-spread, spread), dz = fwd.z + rng.range(-spread, spread);
       const l = Math.hypot(dx, dy, dz);
       const hit = this.castBullet(ox, oy, oz, dx / l, dy / l, dz / l, def.range, player);
@@ -69,10 +75,14 @@ export class Combat {
         if (hit.vehicle.driver && hit.vehicle.driver !== 'player') this.scareDriver(hit.vehicle);
         services.effects.sparks(hx, hy, hz, 5);
         hitSomething = true;
+      } else if (hit.heli) {
+        hit.heli.damage(def.damage * 0.8, 'player');
+        hitSomething = true;
       } else if (hit.dist < def.range) services.effects.dust(hx, hy, hz, 4);
     }
-    if (hitSomething) game.hud.hitmarker();
+    if (hitSomething) { game.hud.hitmarker(); services.skills?.add('shooting', 0.9); }
     game.peds.alert(player.pos.x, player.pos.z, 40);
+    services.wildlife?.scare(player.pos.x, player.pos.z, 55);
     game.police.report('shotsFired', player.pos.x, player.pos.z);
   }
 
@@ -117,9 +127,11 @@ export class Combat {
     }
     if (!best) return;
     services.audio.punch(best.pos);
-    best.takeDamage(def.damage, attacker, 'melee');
-    best.knock(Math.sin(attacker.yaw) * 3, Math.cos(attacker.yaw) * 3, 2);
+    const power = attacker.isPlayer ? services.skills?.punchMul() ?? 1 : 1;
+    best.takeDamage(def.damage * power, attacker, 'melee');
+    best.knock(Math.sin(attacker.yaw) * 3 * power, Math.cos(attacker.yaw) * 3 * power, 2);
     if (attacker.isPlayer) {
+      services.skills?.add('strength', 4);
       game.hud.hitmarker();
       game.police.report(best.team === 'cop' ? 'copAssault' : 'assault', best.pos.x, best.pos.z);
     }

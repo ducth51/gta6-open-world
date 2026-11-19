@@ -6,6 +6,7 @@ import { nodePos } from '../ai/roadGraph.js';
 import { services } from '../core/services.js';
 import { WEAPONS, CITY_SIZE } from '../config.js';
 import { PIER } from '../world/cityPlan.js';
+import { PERKS } from './garagePerks.js';
 import { dist2, formatMoney, makeRng, rng } from '../util/mathx.js';
 
 export const RACES = [
@@ -176,7 +177,14 @@ export class Activities {
 
   spray(input) {
     const g = this.game, v = g.player.vehicle;
-    g.hud.help('<b>Fresh Coat</b><br>Press <kbd>E</kbd>: repair, new paint, new plates — $200.');
+    g.hud.help(`<b>Fresh Coat</b><br><kbd>E</kbd> repair, new paint, new plates — $200<br>${g.perks.shopLines().join('<br>')}`);
+    for (const perk of PERKS) {
+      if (!input.tap(perk.key)) continue;
+      const result = g.perks.buy(perk.id, g.player);
+      if (result === 'ok') { services.audio.passed(); g.notify(`<b>${perk.name}</b> is now level ${g.perks.level(perk.id)}. ${perk.blurb}.`); }
+      else if (result === 'max') g.notify(`${perk.name} is already maxed out.`);
+      else { g.notify('Not enough cash for that upgrade.'); services.audio.click(); }
+    }
     if (!input.tap('KeyE')) return;
     if (g.player.money < 200) { g.notify('Not enough cash.'); return; }
     g.player.money -= 200;

@@ -27,6 +27,8 @@ export class Ped extends Actor {
     this.guardPoint = null;
     this.arrestT = 0;
     this.persistent = false;
+    this.script = null;                          // street events steer their actors with a function
+    this.hasUmbrella = team === 'civ' && rng.chance(0.7);
     if (team === 'cop') { this.weapon = 'pistol'; this.health = this.maxHealth = 90; }
     if (team === 'gang') { this.weapon = rng.chance(0.4) ? 'smg' : 'pistol'; this.health = this.maxHealth = 80; }
     this.pickBlock(x, z);
@@ -68,8 +70,11 @@ export class Ped extends Actor {
     const player = game.player;
     this.fireCd -= dt;
     this.aimPitch = null;
+    // Walkers who own an umbrella put it up in the rain, unless they are running for their lives.
+    this.body.setUmbrella(this.hasUmbrella && this.state !== 'flee' && (services.weather?.rain ?? 0) > 0.3);
     let wx = 0, wz = 0, face = null;
-    if (this.team === 'cop') ({ wx, wz, face } = this.copBehaviour(dt, player, game));
+    if (this.script) ({ wx, wz, face } = this.script(dt, this));   // street events steer their actors directly
+    else if (this.team === 'cop') ({ wx, wz, face } = this.copBehaviour(dt, player, game));
     else if (this.team === 'gang') ({ wx, wz, face } = this.gangBehaviour(dt, player));
     else if (this.state === 'flee') {
       this.stateT -= dt;

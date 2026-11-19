@@ -17,6 +17,7 @@ export class Hud {
       vehicle: $('hud-vehicle'), vehicleName: $('hud-vehicle-name'), speed: $('hud-speed'), radio: $('hud-radio'),
       crosshair: $('hud-crosshair'), hit: $('hud-hitmarker'), subtitle: $('hud-subtitle'), timer: $('hud-timer'),
       damage: $('hud-damage'), banner: $('hud-banner'), bannerTitle: $('hud-banner-title'), bannerSub: $('hud-banner-sub'),
+      stunt: $('hud-stunt'), air: $('hud-air'), sky: $('hud-sky'),
     };
     this.mini = $('hud-minimap');
     this.miniCtx = this.mini.getContext('2d');
@@ -63,6 +64,11 @@ export class Hud {
     const h = game.hour;
     const hh = Math.floor(h), mm = Math.floor((h - hh) * 60);
     this.el.clock.textContent = `${String(hh).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+    this.el.sky.textContent = game.weather.kind === 'clear' ? '' : game.weather.label;
+    const stunt = game.stunts.hudLine();
+    this.el.stunt.classList.toggle('hidden', !stunt);
+    if (stunt) this.el.stunt.textContent = stunt;
+    this.el.air.classList.toggle('hidden', !game.air.active);
     const level = game.police.level;
     this.stars.forEach((s, i) => s.classList.toggle('on', i < level));
     this.el.wanted.classList.toggle('blink', game.police.searching || this.wantedFlashT > 0);
@@ -91,10 +97,10 @@ export class Hud {
     this.el.damage.style.boxShadow = `inset 0 0 180px rgba(200,0,0,${Math.max(low, Math.min(0.6, this.hurtT))})`;
 
     // Objective: mission first, then activities.
-    const obj = game.missions.objective() ?? game.activities.objective();
+    const obj = game.missions.objective() ?? game.activities.objective() ?? game.taxi.objective() ?? game.vigilante.objective() ?? game.events.objective();
     this.el.objective.classList.toggle('hidden', !obj);
     if (obj) this.el.objective.innerHTML = `<div class="mtitle">${obj.title}</div>${obj.text}`;
-    const timer = game.missions.timeLeft ?? game.activities.timer();
+    const timer = game.missions.timeLeft ?? game.activities.timer() ?? game.taxi.timer() ?? game.vigilante.timer();
     this.el.timer.classList.toggle('hidden', timer === null || timer === undefined);
     if (timer !== null && timer !== undefined) this.el.timer.textContent = `${Math.floor(Math.max(0, timer) / 60)}:${String(Math.floor(Math.max(0, timer) % 60)).padStart(2, '0')}`;
 
@@ -129,7 +135,7 @@ export class Hud {
     ctx.translate(-pp.x, -pp.z);
     ctx.drawImage(this.city.canvas, MAP_X0, MAP_Z0, this.city.canvas.width / this.city.scale, this.city.canvas.height / this.city.scale);
     // GPS route.
-    const target = game.missions.currentTarget() ?? game.activities.currentTarget();
+    const target = game.gpsTarget();
     if (target) {
       const route = gpsRoute(pp.x, pp.z, target.x, target.z);
       ctx.strokeStyle = game.missions.active ? '#ffd25e' : '#ff4fa0'; ctx.lineWidth = 5 / s; ctx.lineJoin = 'round';
@@ -153,7 +159,7 @@ export class Hud {
       }
       drawBlip(ctx, q.x, q.y, style, size);
     };
-    for (const b of game.activities.blips()) blip(b.x, b.z, BLIP_STYLE[b.icon], 6, false);
+    for (const b of game.allBlips()) blip(b.x, b.z, BLIP_STYLE[b.icon], 6, false);
     if (!game.missions.active && game.missions.next) { const g = game.missions.giverPos(game.missions.next); blip(g.x, g.z, BLIP_STYLE.mission, 8, true); }
     for (const ped of game.peds.list) {
       if (ped.dead) continue;

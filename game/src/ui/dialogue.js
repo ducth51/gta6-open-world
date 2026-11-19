@@ -16,9 +16,13 @@ export class Dialogue {
     for (const [who, text] of lines) this.queue.push({ who, text, t: 1.6 + text.length * 0.055 });
   }
 
-  bark(text) { this.barks.push({ text, t: 2 }); }
+  /** A short shout from someone nearby, or a line from the radio, shown for `seconds`. */
+  bark(text, seconds = 2) { this.barks.push({ text, t: seconds }); }
 
   skip() { this.current = null; this.t = 0; }
+
+  /** Drops everything queued or showing (a new game, quitting to the title). */
+  clear() { this.queue.length = 0; this.barks.length = 0; this.current = null; this.t = 0; }
 
   get busy() { return !!this.current || this.queue.length > 0; }
 

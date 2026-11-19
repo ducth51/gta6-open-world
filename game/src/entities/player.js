@@ -72,9 +72,13 @@ export class Player extends Actor {
     let mx = fx * f + rx * s, mz = fz * f + rz * s;
     const len = Math.hypot(mx, mz);
     if (len > 1) { mx /= len; mz /= len; }
-    if (sprint && len > 0 && !this.aiming) this.sprintStamina = Math.max(0, this.sprintStamina - dt * 0.12);
-    else this.sprintStamina = Math.min(1, this.sprintStamina + dt * 0.2);
-    const speed = this.aiming ? 2.6 : sprint && this.sprintStamina > 0.05 ? 7.6 : 4.3;
+    if (sprint && len > 0 && !this.aiming) {
+      this.sprintStamina = Math.max(0, this.sprintStamina - dt * 0.12 * (services.skills?.staminaDrain() ?? 1));
+      if (this.sprintStamina > 0.05) services.skills?.add('stamina', dt * 2.2);
+    } else this.sprintStamina = Math.min(1, this.sprintStamina + dt * 0.2);
+    // A trained runner is a little faster: +2% sprint speed per stamina level above the first.
+    const runSpeed = 7.6 * (1 + 0.02 * ((services.skills?.level('stamina') ?? 1) - 1));
+    const speed = this.aiming ? 2.6 : sprint && this.sprintStamina > 0.05 ? runSpeed : 4.3;
     const faceYaw = this.aiming || (input.fire && this.weapon !== 'fists') ? rig.yaw : null;
     this.step(dt, mx * speed, mz * speed, faceYaw);
     if (input.tap('Space')) this.jump();

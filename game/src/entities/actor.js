@@ -70,6 +70,18 @@ export class Actor {
 
   jump() { if (this.onGround && !this.vehicle) { this.vel.y = 7.2; this.onGround = false; } }
 
+  /** Swaps the body for a new one in different clothes, keeping position, health and visibility. */
+  reskin(look) {
+    const visible = this.mesh.visible;
+    services.scene.remove(this.mesh);
+    this.body = new Humanoid(look);
+    this.mesh = this.body.root;
+    this.mesh.visible = visible;
+    services.scene.add(this.mesh);
+    this.body.setWeapon(this.weapon);
+    this.syncMesh(0);
+  }
+
   /** Applies damage; armour soaks most of it. Returns true if this killed the actor. */
   takeDamage(amount, source = null, kind = 'bullet') {
     if (this.dead) return false;

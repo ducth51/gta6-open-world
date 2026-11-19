@@ -10,7 +10,10 @@ const coinGeo = new THREE.CylinderGeometry(0.45, 0.45, 0.08, 20).rotateX(Math.PI
 const heartGeo = new THREE.OctahedronGeometry(0.4, 0);
 const bagGeo = new THREE.SphereGeometry(0.4, 10, 8).scale(1, 0.85, 0.8);
 
-export const MARKER_COLORS = { mission: 0xffd25e, shop: 0x4fa8ff, save: 0x5dff8a, race: 0xb06bff, job: 0xff7a1a, spray: 0x2de2c8, checkpoint: 0xff4fa0, target: 0xff3b3b };
+export const MARKER_COLORS = {
+  mission: 0xffd25e, shop: 0x4fa8ff, save: 0x5dff8a, race: 0xb06bff, job: 0xff7a1a, spray: 0x2de2c8, checkpoint: 0xff4fa0, target: 0xff3b3b,
+  property: 0xffa63d, owned: 0x5dff8a,
+};
 
 export class Marker {
   constructor(kind, radius = 1.6, height = 3) {
@@ -31,6 +34,15 @@ export class Marker {
   place(x, z, y = null) { this.group.position.set(x, (y ?? groundHeight(x, z)) + 0.0, z); this.x = x; this.z = z; return this; }
 
   show(v) { this.group.visible = v; this.visible = v; }
+
+  /** Recolours the column and ring, as when a business changes hands. */
+  setKind(kind) {
+    if (kind === this.kind) return;
+    const color = MARKER_COLORS[kind] ?? 0xffffff;
+    this.column.material.color.setHex(color);
+    this.ring.material.color.setHex(color);
+    this.kind = kind;
+  }
 
   animate(t) {
     if (!this.visible) return;

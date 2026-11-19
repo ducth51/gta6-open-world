@@ -6,6 +6,12 @@ export const CHARACTERS = {
   holt: { name: 'Holt', full: 'Det. Dale Holt', bio: 'PBPD detective with a boat he cannot afford on a cop\'s salary.' },
   kane: { name: 'Kane', full: 'Victor Kane', bio: 'Developer, philanthropist, and the hand inside the Gilded Hand. Wants the whole beachfront.' },
   tomas: { name: 'Tomás', full: 'Tomás Vega', bio: "Sol's little brother. Owes the wrong people forty thousand dollars." },
+  inez: { name: 'Inez', full: 'Inez Calloway', bio: 'Shipping heiress who moves in on the beachfront once Kane is gone. Never seen, always paid.' },
+};
+
+export const CHAPTER_CARDS = {
+  1: 'Kane is finished and Tomás is home. But somebody called Calloway is already asking about Sol.',
+  2: 'Holt and Calloway are gone. Palmera Bay is Sol’s to drive, and the credits roll over the bay.',
 };
 
 export const INTRO_CARD = [
@@ -17,5 +23,6 @@ export const INTRO_CARD = [
 export const CREDITS = [
   'SALT & NEON — a Palmera Bay story',
   'Thanks for playing.',
-  'Free roam is open: races, courier runs, Sun Tokens and the Bayside Arms counter await.',
+  'Free roam is open: races, courier runs, stunt jumps, drifting, street events, three businesses to buy and Sun Tokens to find.',
+  'Check the phone (T) for a cab, Benny’s delivery, your skills and the weather.',
 ];

@@ -64,13 +64,16 @@ export function buildCityMeshes(plan, colliders) {
     }
     for (let j = 0; j <= GRID; j++) crossings.flat(k * CELL, j * CELL, k * CELL + ROAD, j * CELL + ROAD, 0.012, 0xffffff, ROAD);
   }
-  add(roads.build(), new THREE.MeshStandardMaterial({ map: roadTexture(), vertexColors: true, roughness: 0.92 }));
-  add(crossings.build(), new THREE.MeshStandardMaterial({ map: crossingTexture(), vertexColors: true, roughness: 0.92 }));
+  // Surfaces that turn dark and glossy in the rain (see systems/weather.js).
+  const wet = [];
+  const wetMaterial = (params) => { const m = new THREE.MeshStandardMaterial(params); wet.push(m); return m; };
+  add(roads.build(), wetMaterial({ map: roadTexture(), vertexColors: true, roughness: 0.92 }));
+  add(crossings.build(), wetMaterial({ map: crossingTexture(), vertexColors: true, roughness: 0.92 }));
 
   // ---- Sidewalks, lawns and lots ----
   const walks = new MeshBuilder();
   for (const b of plan.blocks) walks.box(b.cx, 0, b.cz, b.x1 - b.x0, CURB, b.z1 - b.z0, 0xffffff, { uScale: 4, vScale: 4, topScale: 4 });
-  add(walks.build(), new THREE.MeshStandardMaterial({ map: sidewalkTexture(), vertexColors: true, roughness: 0.95 }));
+  add(walks.build(), wetMaterial({ map: sidewalkTexture(), vertexColors: true, roughness: 0.95 }));
   const lawns = new MeshBuilder();
   for (const l of plan.lawns) lawns.flat(l.x0, l.z0, l.x1, l.z1, CURB + 0.02, l.color, 10);
   add(lawns.build(), new THREE.MeshStandardMaterial({ map: groundTexture('grass'), vertexColors: true, roughness: 1 }));
@@ -183,6 +186,7 @@ export function buildCityMeshes(plan, colliders) {
   return {
     group,
     water,
+    wet,
     update(time, night) {
       for (const m of nightMaterials) m.emissiveIntensity = m === lampHeads ? 0.4 + night * 2.6 : night * 1.15;
       for (const fn of animated) fn(time);

@@ -8,5 +8,23 @@ export const services = {
   effects: null,
   audio: null,
   game: null,
+  // Set by the systems themselves as they are built, so rules elsewhere (grip, damage, spread) can
+  // consult them without importing them.
+  weather: null,
+  lights: null,
+  skills: null,
+  perks: null,
+  stunts: null,
+  air: null,
+  roadblocks: null,
+  wildlife: null,
+  properties: null,
+  territories: null,
+  events: null,
+  vigilante: null,
+  taxi: null,
+  holdups: null,
+  achievements: null,
+  radioChatter: null,
   time: 0,
 };

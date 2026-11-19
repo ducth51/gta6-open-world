@@ -3,6 +3,7 @@
 // from a seed, so the meshes, colliders, minimap and AI all read the same city.
 import { BLOCK, CELL, CITY_SIZE, GRID, ROAD, SIDEWALK, OCEAN_X, STREETS_EW, STREETS_NS, DISTRICTS } from '../config.js';
 import { makeRng, clamp } from '../util/mathx.js';
+import { nearRamp } from './rampLayout.js';
 
 export const PIER = { x0: CITY_SIZE + 18, x1: OCEAN_X + 120, z: 4 * CELL + 8, half: 7, deck: 0.7 };
 export const QUAY_Z = CITY_SIZE + 22;
@@ -19,6 +20,14 @@ const LANDMARKS = [
   { id: 'spray', name: 'Fresh Coat Garage', bi: 2, bj: 5, w: 28, d: 18, h: 8, style: 'warehouse', color: 0x6fb6e8, sign: 'FRESH COAT', signColor: '#2de2c8', blip: 'spray' },
   { id: 'kane', name: 'Kane Tower', bi: 5, bj: 4, w: 30, d: 30, h: 150, style: 'glass', color: 0xd8c08a, sign: 'KANE', signColor: '#ffd25e', blip: 'kane' },
   { id: 'park', name: 'Fountain Park', bi: 4, bj: 5, park: true },
+  // Businesses Sol can buy once she has the cash (see systems/properties.js).
+  { id: 'carwash', name: 'Sunbright Car Wash', bi: 7, bj: 8, w: 26, d: 16, h: 6, style: 'stucco', color: 0x9fe3f0, sign: 'SUNBRIGHT CAR WASH', signColor: '#2de2c8', blip: 'property' },
+  { id: 'lounge', name: 'Neon Lounge', bi: 8, bj: 7, w: 32, d: 20, h: 13, style: 'stucco', color: 0xd7b8ff, sign: 'NEON LOUNGE', signColor: '#ff3d8b', blip: 'property' },
+  { id: 'salvage', name: 'Dockside Salvage', bi: 1, bj: 9, w: 34, d: 22, h: 9, style: 'warehouse', color: 0x8fa6a0, sign: 'DOCKSIDE SALVAGE', signColor: '#ffa63d', blip: 'property' },
+  // Corner stores that can be held up (see systems/holdups.js).
+  { id: 'mart1', name: 'Palm Mart on Vesper', bi: 6, bj: 3, w: 18, d: 12, h: 5, style: 'stucco', color: 0xffe28a, sign: 'PALM MART', signColor: '#ff3d8b', blip: 'mart' },
+  { id: 'mart2', name: 'Palm Mart at the Docks', bi: 2, bj: 8, w: 18, d: 12, h: 5, style: 'stucco', color: 0xffe28a, sign: 'PALM MART', signColor: '#ff3d8b', blip: 'mart' },
+  { id: 'mart3', name: 'Palm Mart on the Beach', bi: 9, bj: 2, w: 18, d: 12, h: 5, style: 'stucco', color: 0xffe28a, sign: 'PALM MART', signColor: '#ff3d8b', blip: 'mart' },
 ];
 
 const PASTELS = [0xffb3c7, 0xa8f0d8, 0xffd6a5, 0xd7b8ff, 0x9fe3f0, 0xfff1c9, 0xff9e8a, 0xbdf2a6];
@@ -258,8 +267,11 @@ function placeStreetFurniture(plan, block, rng) {
 function placeBeach(plan, rng) {
   for (let z = 10; z < CITY_SIZE; z += rng.range(9, 16)) {
     if (Math.abs(z - PIER.z) < 12) continue;
-    plan.palms.push({ x: CITY_SIZE + rng.range(6, 22), z, s: rng.range(1, 1.4), lean: rng.range(0.1, 0.35) });
-    if (rng.chance(0.5)) plan.props.push({ type: 'umbrella', x: CITY_SIZE + rng.range(20, 30), z: z + rng.range(-3, 3), color: rng.pick([0xff4f7a, 0x2de2c8, 0xffd25e, 0xff8c42]) });
+    // The random numbers are drawn either way, so clearing a ramp's run-up does not reshuffle the beach.
+    const palm = { x: CITY_SIZE + rng.range(6, 22), z, s: rng.range(1, 1.4), lean: rng.range(0.1, 0.35) };
+    const umbrella = rng.chance(0.5) ? { type: 'umbrella', x: CITY_SIZE + rng.range(20, 30), z: z + rng.range(-3, 3), color: rng.pick([0xff4f7a, 0x2de2c8, 0xffd25e, 0xff8c42]) } : null;
+    if (!nearRamp(palm.x, palm.z)) plan.palms.push(palm);
+    if (umbrella && !nearRamp(umbrella.x, umbrella.z)) plan.props.push(umbrella);
   }
   plan.props.push({ type: 'lifeguard', x: CITY_SIZE + 30, z: 160 });
   plan.props.push({ type: 'lifeguard', x: CITY_SIZE + 30, z: 560 });
