@@ -57,6 +57,7 @@ export class Hud {
     const p = game.player;
     // Money ticks up like a cash counter.
     this.displayMoney += (p.money - this.displayMoney) * Math.min(1, dt * 8);
+    if (this.instantMoney) this.displayMoney = p.money;
     if (Math.abs(p.money - this.displayMoney) < 1) this.displayMoney = p.money;
     this.el.money.textContent = formatMoney(this.displayMoney);
     const h = game.hour;

@@ -44,6 +44,7 @@ export const step = {
 
   eliminate: (group, text) => ({
     text,
+    marker: false,
     target: (g, ctx) => ctx[group]?.find((p) => !p.dead)?.pos,
     progress: (g, ctx) => { const all = ctx[group] ?? []; return `${all.filter((p) => p.dead).length}/${all.length}`; },
     update: (g, ctx) => ((ctx[group] ?? []).every((p) => p.dead) ? 'done' : null),

@@ -40,7 +40,7 @@ export class Game {
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.0;
+    renderer.toneMappingExposure = 1.3;
     renderer.outputColorSpace = THREE.SRGBColorSpace;
     container.appendChild(renderer.domElement);
     this.renderer = renderer;
@@ -313,6 +313,7 @@ export class Game {
 
   update(realDt) {
     const input = this.input;
+    this.shotHook?.(realDt * this.timeScale);
     if (this.state === 'play' || this.state === 'pause' || this.state === 'map') {
       if (input.tapAny('Escape', 'KeyP')) {
         if (this.state === 'play') this.pause();
@@ -360,7 +361,7 @@ export class Game {
     this.effects.update(dt);
 
     if (playing) this.cameraRig.update(dt, p, mouse);
-    else this.cameraRig.orbit(dt, this.titleFocus.x, 70, this.titleFocus.z, 190, 0.05);
+    else this.cameraRig.titleView(services.time);
     this.sky.update(this.hour, focus);
     this.city.update(services.time, this.sky.night);
     if (playing) this.hud.update(dt, this);

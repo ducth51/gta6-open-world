@@ -22,6 +22,12 @@ export class Player extends Actor {
   }
 
   get isPlayer() { return true; }
+
+  onHurt(amount, source, kind) {
+    services.game?.hud.hurt();
+    if (kind === 'bullet' || kind === 'melee') services.effects?.blood(this.pos.x, this.pos.y + 1.2, this.pos.z);
+    if (kind === 'vehicle') services.game?.cameraRig.shake(0.5);
+  }
   get weaponDef() { return WEAPONS[this.weapon]; }
 
   giveWeapon(id, ammo) {

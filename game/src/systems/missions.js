@@ -68,7 +68,7 @@ export class MissionSystem {
     }
     const result = st.update(g, this.ctx, dt);
     const target = st.target?.(g, this.ctx);
-    if (target && !g.player.dead) {
+    if (target && !g.player.dead && st.marker !== false) {
       this.targetMarker.place(target.x, target.z, target.y).show(true);
       this.targetMarker.animate(t);
     } else this.targetMarker.show(false);

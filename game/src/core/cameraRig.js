@@ -2,7 +2,7 @@
 // camera in cars that swings behind on its own, widens with speed and never clips into buildings.
 import * as THREE from 'three';
 import { services } from './services.js';
-import { clamp, damp, dampAngle, lerp } from '../util/mathx.js';
+import { clamp, damp, dampAngle } from '../util/mathx.js';
 import { groundHeight } from '../world/cityPlan.js';
 
 const _target = new THREE.Vector3();
@@ -79,11 +79,14 @@ export class CameraRig {
     if (Math.abs(cam.fov - this.fov) > 0.05) { cam.fov = this.fov; cam.updateProjectionMatrix(); }
   }
 
-  /** A slow orbit around a point, for the title screen. */
-  orbit(dt, cx, cy, cz, radius, speed) {
-    this.yaw += dt * speed;
+  /** The title view: out over the bay, looking back at the skyline, drifting slowly. */
+  titleView(t) {
     const cam = this.camera;
-    cam.position.set(cx - Math.sin(this.yaw) * radius, cy, cz - Math.cos(this.yaw) * radius);
-    cam.lookAt(cx, lerp(cy, 0, 0.75), cz);
+    const a = -Math.PI / 2 + Math.sin(t * 0.05) * 0.32;
+    const cx = 560, cz = 380, r = 520;
+    cam.position.set(cx - Math.sin(a) * r, 46 + Math.sin(t * 0.08) * 6, cz - Math.cos(a) * r);
+    cam.lookAt(cx, 52, cz);
+    if (cam.fov !== 55) { cam.fov = 55; cam.updateProjectionMatrix(); }
+    this.yaw = a;
   }
 }

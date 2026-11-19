@@ -65,7 +65,16 @@ export function buildCarMesh(def, color) {
     hood.rotation.x = 0.06;
   }
   const cabin = box(w * 0.84, ch, cabinLen, M.glass, 0, base + bh + ch / 2, cabinZ, body);
-  box(w * 0.86, 0.08, cabinLen * 0.86, def.police && !def.van ? M.white : pm, 0, base + bh + ch + 0.03, cabinZ - 0.05, body);
+  const roofMat = def.police && !def.van ? M.white : pm;
+  box(w * 0.86, 0.08, cabinLen * 0.9, roofMat, 0, base + bh + ch + 0.03, cabinZ - 0.02, body);
+  // Pillars and a belt line frame the glass so the cabin reads as windows, not a black box.
+  for (const sx of [-1, 1]) {
+    for (const sz of [-1, 0, 1]) {
+      if (sz === 0 && cabinLen < 2.2) continue;
+      box(0.09, ch, 0.12, roofMat, sx * w * 0.42, base + bh + ch / 2, cabinZ + sz * (cabinLen / 2 - 0.06), body);
+    }
+    box(0.05, 0.05, cabinLen, M.rim, sx * w * 0.43, base + bh + 0.02, cabinZ, body);
+  }
   if (def.pickup) {
     box(0.12, 0.35, len * 0.42, pm, w / 2 - 0.06, base + bh + 0.17, -len * 0.25, body);
     box(0.12, 0.35, len * 0.42, pm, -w / 2 + 0.06, base + bh + 0.17, -len * 0.25, body);

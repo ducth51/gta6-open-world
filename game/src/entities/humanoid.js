@@ -12,8 +12,8 @@ const geo = {
   leg: new THREE.BoxGeometry(0.19, 0.9, 0.2).translate(0, -0.45, 0),
   shoe: new THREE.BoxGeometry(0.2, 0.1, 0.3).translate(0, -0.9, 0.05),
   cap: new THREE.BoxGeometry(0.3, 0.08, 0.38).translate(0, 0.33, 0.04),
-  gun: new THREE.BoxGeometry(0.07, 0.12, 0.34).translate(0, -0.64, 0.14),
-  longGun: new THREE.BoxGeometry(0.08, 0.13, 0.7).translate(0, -0.64, 0.25),
+  gun: new THREE.BoxGeometry(0.07, 0.34, 0.12).translate(0, -0.78, 0.05),
+  longGun: new THREE.BoxGeometry(0.08, 0.72, 0.13).translate(0, -0.88, 0.05),
   badge: new THREE.BoxGeometry(0.08, 0.08, 0.02).translate(0.12, 0.48, 0.15),
 };
 const shadowGeo = new THREE.CircleGeometry(0.45, 12).rotateX(-Math.PI / 2);

@@ -98,7 +98,7 @@ export function roadTexture() {
   if (cache.has('road')) return cache.get('road');
   const c = canvas(256, 256), x = c.getContext('2d');
   const rng = makeRng(11);
-  x.fillStyle = '#3b3d42'; x.fillRect(0, 0, 256, 256);
+  x.fillStyle = '#4d5058'; x.fillRect(0, 0, 256, 256);
   noise(x, 256, 256, 6000, rng, 0.09);
   // Tyre wear in each lane.
   x.fillStyle = 'rgba(0,0,0,0.10)'; x.fillRect(0, 40, 256, 18); x.fillRect(0, 198, 256, 18); x.fillRect(0, 88, 256, 14); x.fillRect(0, 154, 256, 14);
@@ -114,7 +114,7 @@ export function crossingTexture() {
   if (cache.has('crossing')) return cache.get('crossing');
   const c = canvas(256, 256), x = c.getContext('2d');
   const rng = makeRng(12);
-  x.fillStyle = '#3b3d42'; x.fillRect(0, 0, 256, 256);
+  x.fillStyle = '#4d5058'; x.fillRect(0, 0, 256, 256);
   noise(x, 256, 256, 6000, rng, 0.09);
   x.fillStyle = 'rgba(235,232,222,0.9)';
   for (let k = 20; k < 236; k += 22) {

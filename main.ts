@@ -1,12 +1,11 @@
-// A working gta6-01 entry (Node 22, standard library only): the game is this directory's
-// game/ folder, plain static files a desktop browser loads offline (game/index.html and its ES
-// modules, no library and no network request), and the program hands it in. It copies game/ and
-// screenshots/ from beside this file to /output and writes /output/dossier.json, the summary the
-// judge reads, with the vendored make.fun library. Only the plumbing, not an open world: Block
-// Dodger, a plain 2D canvas game where a paddle dodges falling blocks and catches coins, with a
-// title screen, score, lives and levels, game over and restart, flat colours and no sound. Build
-// your own open-world crime game in its place (three.js or any library you vendor under game/),
-// put your 3 or 4 PNG or JPEG screenshots in screenshots/ (the first by name is the cover) and run it.
+// Salt & Neon — a Palmera Bay story: the gta6-01 entry (Node 22, standard library only).
+// The game is game/: an original open-world crime game in three.js (vendored as
+// game/vendor/three.module.min.js), plain static files that run offline from game/index.html.
+// Palmera Bay has five districts, traffic and pedestrians, cars to steal and drive, a five-star
+// police response, five story missions, races, courier jobs, collectibles, shops, a HUD with a
+// rotating minimap, synthesised sound and radio, a title screen and save slots.
+// This program hands it in: it copies game/ and screenshots/ (1-chase.jpg is the cover) to
+// /output and writes /output/dossier.json with the vendored make.fun library.
 //
 // Serve it locally with `node serve.ts`, then open http://localhost:8080.
 // Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
